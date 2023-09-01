@@ -1,142 +1,125 @@
-//Del 1
-let cardDeck = [
-    {
-        suit: "hearts",
-        color: "red",
-        numbers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-    },
-    {
-        suit: "diamonds",
-        color: "red",
-        numbers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-    },
-    {
-        suit: "spades",
-        color: "black",
-        numbers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-    },
-    {
-        suit: "clubs",
-        color: "black",
-        numbers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+console.log("POKER PART START")
+
+
+//kort
+class Card {
+  constructor(suit, number) {
+        
+    this.suit = suit;
+    this.number = number;
+  }
+}
+  
+//tomt kortlek
+class Deck {
+  constructor() {
+    this.cards = [];
+    const suits = ["hearts", "diamonds", "clubs", "spades"];
+    const numbers = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
+
+    //skapar kort och pushar in i kortleken
+    for (let suit of suits) {
+      for (let number of numbers) {
+        this.cards.push(new Card(suit, number));
+      }
     }
-];
+    }
 
-let newCardDeck = [];
-let allPlayers = [];
+    //blandar kortleken.
+    shuffle() {
+      for (let i = this.cards.length - 1; i > 0; i--) {
+        let j = Math.floor(Math.random() * (i + 1));
+        [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
+      }
+    }
 
+    draw() {
+      return this.cards.shift();
+    }
+}
 
+//ny spelare class
 class Player {
-
-    constructor(name) {
-        this.name = name
-        this.cards = []
-        this.score = 0
-        allPlayers.push(this)
+  constructor(name) {
+    this.name = name;
+    this.hand = [];
+    this.number = 0;
     }
 
-    fiveCards( ){
-        let fiveCards = []
-    
-        for(let i = 0; i < 5; i++){
-            let random = Math.floor(Math.random() * newCardDeck.length)
-            let randomCard = newCardDeck.splice(random, 1)
-            fiveCards.push(randomCard)
-        }
-        this.cards = fiveCards
-
-        let showCards = []
-        this.cards.forEach(element => {
-            showCards.push(" " + element[0].number + " " + element[0].suit)        
-        });
-
-        console.log("This is " + this.name + "s cards:" + showCards +".")
-        this.playerScore()
+  //drar kort till spelaren
+  newCards(deck, numCards) {
+    for (let i = 0; i < numCards; i++) {
+      let card = deck.draw();
+      this.hand.push(card);
+      this.number += parseInt(card.number) || 10;
     }
+  }
 
-    twoCards (){
-
-        for(let i = 0; i < 2; i++){
-            let random = Math.floor(Math.random() * newCardDeck.length)
-            let randomCard = newCardDeck.splice(random, 1)
-
-            random = Math.floor(Math.random() * this.cards.length)
-            this.cards.splice(random, 1, randomCard )
-        }
-
-        let showCards = []
-        this.cards.forEach(element => {
-            showCards.push(" " + element[0].number + " " + element[0].suit)        
-        });
-
-        console.log("This is " + this.name + "s cards:" + showCards +".")
-        this.playerScore()  
-    };
-
-    playerScore (){
-        let points = 0;
-
-        this.cards.forEach(card => {
-            card.forEach(cardInfo => {
-                points += cardInfo.number
-            })  
-        })
-
-        this.score = points
-        return this.score
+  //drar av kort från spelaren
+  removeCards(numCards) {
+    for (let i = 0; i < numCards; i++) {
+      let discardedCard = this.hand.shift();    
+      console.log(`${this.name} discarded ${discardedCard.number} of ${discardedCard.suit}`);
+      this.number -= parseInt(discardedCard.number) || 10;
     }
-};
+  }
+}
+  
+const deck = new Deck();
+console.log("New unshuffled deck: ", deck.cards);
+deck.shuffle();
+console.log("Shuffled deck: ", deck.cards);
+  
+const mario = new Player("Mario");
+const godzilla = new Player("Godzilla");
 
-function startCardDeck () {
+console.log("Players: ", mario, godzilla);
+  
+mario.newCards(deck, 5);
+godzilla.newCards(deck, 5);
+console.log("Cards left: ", deck.cards);
+console.log("Players: ", mario, godzilla);
+  
+mario.removeCards(2);
+godzilla.removeCards(2);
+console.log("Cards left: ", deck.cards);
+console.log("Players: ", mario, godzilla);
+  
+mario.newCards(deck, 2);
+godzilla.newCards(deck, 2);
+console.log("Cards left: ", deck.cards);
+console.log("Players: ", mario, godzilla);
+  
 
-    cardDeck.forEach(element => {
-        element.numbers.forEach(number => { newCardDeck.push({suit: element.suit, number: number}) })  
-    })
+class Game {
+  constructor(deck, players) {
+    this.deck = deck;
+    this.players = players;
+    this.discardPile = [];
+  }
 
-    console.log("This is the new card deck:" + newCardDeck.map(card => " " + card.number + " " + card.suit))
-};
-startCardDeck();
 
-function shuffleCardDeck(array) {
-    for (let i = array.length - 1; i > 0; i--) { 
-   
-        // Generate random number 
-        let random = Math.floor(Math.random() * (i + 1));
-                   
-        let temp = array[i];
-        array[i] = array[random];
-        array[random] = temp;
+  reset() {
+    for (let player of this.players) {
+      this.deck.cards.push(...player.hand);
+      player.hand = [];
     }
+    while (this.discardPile.length > 0) {
+      this.deck.cards.push(this.discardPile.pop());
+    }
+    this.deck.shuffle();
+    console.log("New shuffled deck:");
+    console.log(this.deck.cards);
+    console.log("Players and discard pile have no cards.");
+  }
+ 
+}
 
-    console.log("This is the shuffled card deck:" + newCardDeck.map(card => " " + card.number + " " + card.suit))
- };
-shuffleCardDeck(newCardDeck);
+const newGame = new Game(deck, [mario, godzilla]);
+newGame.reset();
+  
+function resetGame() {
+  newGame.reset();
+}
 
-
-
-let slim = new Player("Slim")
-let luke = new Player("Luke")
-
-console.log("This is our players for the night:" + allPlayers.map(player =>" " +  player.name) + "!")
-
-
-slim.fiveCards()
-luke.fiveCards()
-
-
-console.log("This is the reamning cards in the deck:" + newCardDeck.map(card => " " + card.number + " " + card.suit))
-console.log(`The total score of Slim and Luke is: ${slim.score + luke.score}` )
-
-
-slim.twoCards()
-luke.twoCards()
-
-console.log(newCardDeck)
-console.log("This is the reamning cards in the deck:" + newCardDeck.map(card => " " + card.number + " " + card.suit))
-
-console.log(`The total score of Slim and Luke is: ${slim.score + luke.score}` )
-
-
-
-
-
+console.log("POKER PART END")
